@@ -21,8 +21,10 @@ def run_detection(line_id: int, stop_name: str | None = None, db: Session = Depe
     trips = db.scalars(select(Trip).where(Trip.line_id == line_id)).all()
     trip_ids = [t.id for t in trips]
     trip_no_map = {t.id: t.trip_no for t in trips}
+    vehicle_map = {t.id: t.vehicle_no for t in trips}
     arrivals = db.scalars(select(Arrival).where(Arrival.trip_id.in_(trip_ids))).all()
-    payload = [{"stop_name": a.stop_name, "trip_no": trip_no_map[a.trip_id], "actual_arrive": a.actual_arrive}
+    payload = [{"stop_name": a.stop_name, "trip_no": trip_no_map[a.trip_id],
+                "vehicle_no": vehicle_map[a.trip_id], "actual_arrive": a.actual_arrive}
                for a in arrivals if stop_name is None or a.stop_name == stop_name]
     events = detect_bunching(payload, line.planned_headway_min, line.bunch_threshold, line.large_threshold)
     data = events_to_dicts(events)
@@ -34,7 +36,7 @@ def run_detection(line_id: int, stop_name: str | None = None, db: Session = Depe
 @router.get("/suggestions")
 def suggestions(line_id: int, db: Session = Depends(get_db)):
     result = run_detection(line_id=line_id, stop_name=None, db=db)
-    return {"line_id": line_id, "suggestions": [e for e in result["events"] if e["status"] != "normal"]}
+    return {"line_id": line_id, "suggestions": [e for e in result["events"] if e["status"] in ("bunching", "large_gap")]}
 
 @router.get("/timeline")
 def timeline(line_id: int, stop_name: str = "市民中心", db: Session = Depends(get_db)):

@@ -20,6 +20,9 @@ def classify_gap(gap_min: float, planned_headway_min: float, bunch_threshold: fl
         return ("large_gap", f"间隔 {gap_min:.1f} 分钟超过大间隔阈值 {large_threshold}，建议前车减速或加发。")
     return ("normal", f"间隔接近计划 {planned_headway_min:.1f} 分钟，保持即可。")
 
+def _vehicle_of(arrival: dict) -> str:
+    return (arrival.get("vehicle_no") or "").strip()
+
 def detect_bunching(arrivals: list[dict], planned_headway_min: float, bunch_threshold: float, large_threshold: float) -> list[GapEvent]:
     by_stop: dict[str, list[dict]] = {}
     for a in arrivals:
@@ -30,7 +33,12 @@ def detect_bunching(arrivals: list[dict], planned_headway_min: float, bunch_thre
         for i in range(1, len(items)):
             prev, cur = items[i - 1], items[i]
             gap_min = (cur["actual_arrive"] - prev["actual_arrive"]).total_seconds() / 60.0
-            status, suggestion = classify_gap(gap_min, planned_headway_min, bunch_threshold, large_threshold)
+            prev_vehicle, cur_vehicle = _vehicle_of(prev), _vehicle_of(cur)
+            if prev_vehicle and prev_vehicle == cur_vehicle:
+                # 同车周转隔离：同一车辆连续两班，不判串车/大间隔，标为同车接续
+                status, suggestion = ("same_vehicle", f"车辆 {cur_vehicle} 同车接续周转，间隔 {gap_min:.1f} 分钟不计入串车/大间隔。")
+            else:
+                status, suggestion = classify_gap(gap_min, planned_headway_min, bunch_threshold, large_threshold)
             events.append(GapEvent(stop, prev["trip_no"], cur["trip_no"], round(gap_min, 2), planned_headway_min, status, suggestion))
     return events
 
