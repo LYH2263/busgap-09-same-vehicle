@@ -12,6 +12,7 @@ class GapEvent:
     planned_headway_min: float
     status: str
     suggestion: str
+    same_vehicle: bool = False
 
 def classify_gap(gap_min: float, planned_headway_min: float, bunch_threshold: float, large_threshold: float) -> tuple[str, str]:
     if gap_min < bunch_threshold:
@@ -30,6 +31,13 @@ def detect_bunching(arrivals: list[dict], planned_headway_min: float, bunch_thre
         for i in range(1, len(items)):
             prev, cur = items[i - 1], items[i]
             gap_min = (cur["actual_arrive"] - prev["actual_arrive"]).total_seconds() / 60.0
+            prev_vehicle = (prev.get("vehicle_no") or "").strip()
+            cur_vehicle = (cur.get("vehicle_no") or "").strip()
+            if prev_vehicle and prev_vehicle == cur_vehicle:
+                # 同车周转接续：同一车辆连续两班，不计串车/大间隔
+                status, suggestion = ("same_vehicle", f"同车 {prev_vehicle} 周转接续，间隔 {gap_min:.1f} 分钟，不计入串车/大间隔。")
+                events.append(GapEvent(stop, prev["trip_no"], cur["trip_no"], round(gap_min, 2), planned_headway_min, status, suggestion, True))
+                continue
             status, suggestion = classify_gap(gap_min, planned_headway_min, bunch_threshold, large_threshold)
             events.append(GapEvent(stop, prev["trip_no"], cur["trip_no"], round(gap_min, 2), planned_headway_min, status, suggestion))
     return events

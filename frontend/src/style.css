@@ -133,6 +133,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.25rem; font-weight: 700; }
 }
 .bg-gap-strip.bg-bunch { border-top-color: var(--bg-red); }
 .bg-gap-strip.bg-large { border-top-color: var(--bg-amber); }
+.bg-gap-strip.bg-same { border-top-color: var(--bg-dim); }
 .bg-gap-strip header {
   padding: 0.65rem 0.7rem 0.4rem;
   font-size: 0.8rem; font-weight: 700;
@@ -163,6 +164,12 @@ th { color: var(--bg-dim); font-weight: 600; font-size: 0.78rem; }
 .badge-ok { background: rgba(61,214,140,0.18); color: var(--bg-ok); }
 .badge-warn { background: rgba(255,176,32,0.18); color: var(--bg-amber); }
 .badge-bad { background: rgba(255,77,109,0.18); color: var(--bg-red); }
+.badge-dim { background: rgba(122,155,176,0.18); color: var(--bg-dim); }
+.bg-veh-input {
+  width: 6.5rem; background: transparent; border: 1px solid var(--bg-edge);
+  color: var(--bg-text); font-size: 0.75rem; padding: 0.1rem 0.3rem;
+}
+.bg-veh-input:focus { outline: none; border-color: var(--bg-cyan); }
 .btn {
   background: var(--bg-cyan); color: #041018; border: none;
   padding: 0.45rem 0.95rem; font-weight: 700; cursor: pointer; font-size: 0.85rem;

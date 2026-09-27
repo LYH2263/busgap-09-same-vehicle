@@ -1,9 +1,13 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.models import Trip
 router = APIRouter(prefix="/trips", tags=["trips"])
+
+class TripUpdate(BaseModel):
+    vehicle_no: str
 
 @router.get("")
 def list_trips(line_id: int | None = None, db: Session = Depends(get_db)):
@@ -12,3 +16,12 @@ def list_trips(line_id: int | None = None, db: Session = Depends(get_db)):
     return [{"id": r.id, "line_id": r.line_id, "trip_no": r.trip_no,
              "planned_depart": r.planned_depart.isoformat(), "vehicle_no": r.vehicle_no}
             for r in db.scalars(q).all()]
+
+@router.patch("/{trip_id}")
+def update_trip(trip_id: int, body: TripUpdate, db: Session = Depends(get_db)):
+    trip = db.get(Trip, trip_id)
+    if not trip: raise HTTPException(404, "班次不存在")
+    trip.vehicle_no = body.vehicle_no.strip()
+    db.commit(); db.refresh(trip)
+    return {"id": trip.id, "line_id": trip.line_id, "trip_no": trip.trip_no,
+            "planned_depart": trip.planned_depart.isoformat(), "vehicle_no": trip.vehicle_no}
